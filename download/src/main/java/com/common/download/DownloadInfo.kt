@@ -5,7 +5,7 @@ import com.common.download.db.DownloadDBUtils
 
 object Status {
     /** 无状态 */
-    const val NONE = 0  //never save
+    const val NONE = 0
     /** 開始下載 */
     const val STARTED = 1
     /** 下载中 */
@@ -17,9 +17,9 @@ object Status {
     /** 错误 */
     const val FAILED = 5
     /** 刪除了 */
-    const val DELETED = 6 //never save
+    const val DELETED = 6
     /** 等待下载中 */
-    const val PENDING = 7 //never save
+    const val PENDING = 7
 }
 
 /**
@@ -94,14 +94,17 @@ class TaskInfo(
     var message: String? = "",
     var isChild: Boolean = false,
     var childUrl: String? = null,
-    var data: String? = null
+    var data: String? = null,
+    var updateTime: Long = 0
 ) {
+
     /**
      * 重置任务
      */
     fun reset() {
         contentLength = -1
         currentLength = 0
+        updateTime = 0
         status = Status.NONE
     }
 }
