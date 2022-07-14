@@ -8,10 +8,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.common.download.Status.DOWNLOADING
 import com.common.download.Status.PAUSED
 import com.common.download.Status.STARTED
-import com.common.download.TasksInfo
+import com.common.download.TaskInfo
 import com.common.download.db.DownloadDBUtils.DB_NAME
 
-@Database(entities = [TasksInfo::class], version = 1, exportSchema = false)
+@Database(entities = [TaskInfo::class], version = 1, exportSchema = false)
 abstract class TasksDataBase : RoomDatabase() {
 
     abstract fun tasksDao(): TasksDao
@@ -43,8 +43,8 @@ abstract class TasksDataBase : RoomDatabase() {
 internal fun fixAbnormalState(db: SupportSQLiteDatabase) {
     db.beginTransaction()
     try {
-        db.execSQL("""UPDATE ${DownloadDBUtils.TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $STARTED""")
-        db.execSQL("""UPDATE ${DownloadDBUtils.TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $DOWNLOADING""")
+        db.execSQL("""UPDATE ${DownloadDBUtils.TASK_TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $STARTED""")
+        db.execSQL("""UPDATE ${DownloadDBUtils.TASK_TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $DOWNLOADING""")
         db.setTransactionSuccessful()
     } finally {
         db.endTransaction()

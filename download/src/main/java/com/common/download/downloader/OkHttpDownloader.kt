@@ -5,10 +5,7 @@ import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.Streaming
-import retrofit2.http.Url
+import retrofit2.http.*
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.InputStream
@@ -35,6 +32,18 @@ object OkHttpDownloader : Downloader {
         }
     }
 
+    override suspend fun head(url: String): DownloadResponse {
+        val response = downloadApi.head(url)
+        if (response.isSuccessful) {
+            val responseBody = response.body()
+            responseBody ?: return DownloadResponse.Error(response.code(), "ResponseBody is null")
+            val supportRange = !response.headers()["Content-Range"].isNullOrEmpty()
+            return DownloadResponse.Success(responseBody.contentLength(), supportRange, responseBody.byteStream())
+        } else {
+            return DownloadResponse.Error(response.code(), if (response.message() == "") "${response.code()}" else response.message())
+        }
+    }
+
 }
 
 /**
@@ -45,4 +54,7 @@ interface DownloadApi {
     @Streaming
     @GET
     suspend fun download(@Header("RANGE") start: String? = "0", @Url url: String?): Response<ResponseBody>
+
+    @HEAD
+    suspend fun head(@Url url: String): Response<ResponseBody>
 }

@@ -1,6 +1,7 @@
 package com.common.download.downloader
 
 import com.common.download.DownloadResponse
+import com.common.download.DownloadUtils
 
 /**
  * 下载的接口
@@ -13,4 +14,9 @@ interface Downloader {
      * @param url 下載的 Url
      */
     suspend fun download(start: String? = "0", url: String): DownloadResponse
+    /**
+     * 下載
+     * @param url 下載的 Url
+     */
+    suspend fun head(url: String): DownloadResponse
 }

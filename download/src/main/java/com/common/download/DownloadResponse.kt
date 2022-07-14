@@ -12,6 +12,13 @@ sealed class DownloadResponse {
     data class Success(val contentLength: Long, val supportRange: Boolean = false, val byteStream: InputStream) : DownloadResponse()
 
     /**
+     * Head
+     * @param contentLength 文件内容长度
+     * @param supportRange 是否支持断点续传
+     */
+    data class Head(val contentLength: Long, val supportRange: Boolean = false) : DownloadResponse()
+
+    /**
      * 失败
      * @param code 错误码
      * @param message 错误消息

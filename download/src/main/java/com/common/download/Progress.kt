@@ -1,17 +1,14 @@
 package com.common.download
 
-import androidx.room.Ignore
 import java.math.BigDecimal
 
-class Progress @Ignore constructor(
-    var downloadSize: Long = 0,
-    var totalSize: Long = 0,
+class Progress {
+    var downloadSize: Long = 0
+    var totalSize: Long = 0
     /**
      * 用于标识一个链接是否是分块下载, 如果该值为true, 那么totalSize为-1
      */
     var isChunked: Boolean = false
-) {
-    constructor(): this(0)
     /**
      * Return total size str. eg: 10M
      */

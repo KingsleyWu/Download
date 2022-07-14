@@ -1,6 +1,7 @@
 package com.kingsley.download
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,6 +20,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import com.common.download.DownloadUtils
 import com.kingsley.download.ui.base.Dialog
 import com.kingsley.download.ui.theme.DownloadTheme
 
@@ -26,6 +31,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        DownloadUtils.cancel(1)
         setContent {
             DownloadTheme {
                 // A surface container using the 'background' color from the theme
@@ -33,7 +39,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Greeting("Android")
+                    Greeting("Android", this)
                 }
             }
         }
@@ -41,7 +47,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String) {
+fun Greeting(name: String, lifecycleOwner: LifecycleOwner) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     Box(contentAlignment = Alignment.Center) {
         Text(text = "Hello $name!", modifier = Modifier
@@ -49,6 +55,11 @@ fun Greeting(name: String) {
             .padding(16.dp)
             .clickable {
                 showDialog = !showDialog
+                DownloadUtils
+                    .download(1)
+                    .observer(lifecycleOwner) {
+                        Log.d("TAG", "Greeting: $it")
+                    }
             })
     }
     if (showDialog) {
@@ -120,6 +131,21 @@ fun Greeting(name: String) {
 @Composable
 fun DefaultPreview() {
     DownloadTheme {
-        Greeting("Android")
+        Greeting("Android", LifecycleOwner {
+            return@LifecycleOwner object : Lifecycle(){
+                override fun addObserver(observer: LifecycleObserver) {
+
+                }
+
+                override fun removeObserver(observer: LifecycleObserver) {
+
+                }
+
+                override fun getCurrentState(): State {
+                    return Lifecycle.State.CREATED
+                }
+
+            }
+        })
     }
 }
