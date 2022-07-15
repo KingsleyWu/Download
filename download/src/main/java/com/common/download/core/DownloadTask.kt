@@ -31,7 +31,7 @@ class DownloadTask(val taskInfo: TaskInfo) {
                         // 初始化一下內容 contentLength
                         for (info in taskInfo.tasks) {
                             if (info.contentLength < 0) {
-                                val head = DownloadUtils.downloader.head(info.url)
+                                val head = DownloadUtils.downloader.get(info.url)
                                 if (head is DownloadResponse.Head) {
                                     info.contentLength = head.contentLength
                                 }  else if (head is DownloadResponse.Error) {
@@ -39,6 +39,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                     taskInfo.status = Status.FAILED
                                     info.message = head.message
                                     taskInfo.message = head.message
+                                    info.updateTime = System.currentTimeMillis()
+                                    taskInfo.updateTime = System.currentTimeMillis()
                                     emit(taskInfo)
                                     DownloadBroadcastUtil.sendBroadcast(DownloadAction.Failed(taskInfo))
                                     return@flow
@@ -53,20 +55,6 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                 Status.NONE,
                                 Status.PAUSED,
                                 Status.FAILED -> {
-                                    if (true) {
-                                        info.status = Status.STARTED
-                                        emit(taskInfo)
-                                        Log.d("TAG", "start2 status : ${info.status}, status: ${taskInfo.status}")
-                                        delay(2000)
-                                        info.status = Status.DOWNLOADING
-                                        taskInfo.status = Status.DOWNLOADING
-                                        Log.d("TAG", "start3 status : ${info.status}, status: ${taskInfo.status}")
-                                        delay(2000)
-                                        info.status = Status.COMPLETED
-                                        Log.d("TAG", "start4 status : ${info.status}, status: ${taskInfo.status}")
-                                        emit(taskInfo)
-                                        continue
-                                    }
                                     var startPosition = info.currentLength
                                     //验证断点有效性
                                     if (startPosition < 0) {
@@ -80,6 +68,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                             if (startPosition == info.contentLength && File(info.path!!).exists()) {
                                                 info.status = Status.COMPLETED
                                                 info.message = ""
+                                                info.updateTime = System.currentTimeMillis()
+                                                taskInfo.updateTime = System.currentTimeMillis()
                                                 continue
                                             } else {
                                                 startPosition = 0
@@ -98,6 +88,7 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                         }
                                         //保存的文件名称
                                         if (TextUtils.isEmpty(info.fileName)) {
+
                                             info.fileName = UrlUtils.getUrlFileName(info.url)
                                         }
                                         //创建File,如果已经指定文件path,将会使用指定的path,如果没有指定将会使用默认的下载目录
@@ -133,6 +124,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
 //                                                LogUtils.d(TAG, "start file.exists() DONE")
                                                 info.status = Status.COMPLETED
                                                 info.message = ""
+                                                info.updateTime = System.currentTimeMillis()
+                                                taskInfo.updateTime = System.currentTimeMillis()
                                                 rename(info)
                                                 emit(taskInfo)
                                             } else {
@@ -159,8 +152,10 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                                     val currentTime = System.currentTimeMillis()
                                                     if (currentTime - info.updateTime > DownloadUtils.updateTime) {
                                                         info.status = Status.DOWNLOADING
+                                                        taskInfo.status = Status.DOWNLOADING
                                                         info.message = ""
                                                         info.updateTime = currentTime
+                                                        taskInfo.updateTime = currentTime
                                                         emit(taskInfo)
                                                     }
                                                 }
@@ -169,6 +164,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                                 taskInfo.status = Status.FAILED
                                                 info.message = e.message
                                                 taskInfo.message = e.message
+                                                info.updateTime = System.currentTimeMillis()
+                                                taskInfo.updateTime = System.currentTimeMillis()
                                                 emit(taskInfo)
                                                 DownloadBroadcastUtil.sendBroadcast(DownloadAction.Failed(taskInfo))
                                                 break
@@ -183,6 +180,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                                 info.message = ""
                                                 info.updateTime = System.currentTimeMillis()
                                                 info.status = Status.COMPLETED
+                                                info.updateTime = System.currentTimeMillis()
+                                                taskInfo.updateTime = System.currentTimeMillis()
                                                 rename(info)
                                                 emit(taskInfo)
                                             }
@@ -192,6 +191,8 @@ class DownloadTask(val taskInfo: TaskInfo) {
                                         taskInfo.status = Status.FAILED
                                         info.message = result.message
                                         taskInfo.message = result.message
+                                        info.updateTime = System.currentTimeMillis()
+                                        taskInfo.updateTime = System.currentTimeMillis()
                                         emit(taskInfo)
                                         DownloadBroadcastUtil.sendBroadcast(DownloadAction.Failed(taskInfo))
                                         break
@@ -209,6 +210,7 @@ class DownloadTask(val taskInfo: TaskInfo) {
                         taskInfo.let { info ->
                             info.status = Status.FAILED
                             info.message = it.message
+                            info.updateTime = System.currentTimeMillis()
                             emit(info)
                             DownloadBroadcastUtil.sendBroadcast(DownloadAction.Failed(info))
                         }

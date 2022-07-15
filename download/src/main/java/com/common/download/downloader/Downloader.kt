@@ -18,5 +18,5 @@ interface Downloader {
      * 下載
      * @param url 下載的 Url
      */
-    suspend fun head(url: String): DownloadResponse
+    suspend fun get(url: String): DownloadResponse
 }

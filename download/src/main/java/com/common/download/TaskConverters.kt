@@ -10,22 +10,22 @@ class TaskConverters {
     private val mType: Type by lazy { object : TypeToken<List<DownloadInfo>>() {}.type }
 
     @TypeConverter
-    fun stringToList(value: String): List<DownloadInfo> {
+    fun stringToList(value: String?): List<DownloadInfo>? {
         return mGson.fromJson(value, mType)
     }
 
     @TypeConverter
-    fun listToString(list: List<DownloadInfo>): String {
+    fun listToString(list: List<DownloadInfo>?): String {
         return mGson.toJson(list)
     }
 
     @TypeConverter
-    fun stringToObject(value: String): DownloadInfo? {
+    fun stringToObject(value: String?): DownloadInfo? {
         return mGson.fromJson(value, DownloadInfo::class.java)
     }
 
     @TypeConverter
-    fun objectToString(info: DownloadInfo): String {
+    fun objectToString(info: DownloadInfo?): String {
         return mGson.toJson(info)
     }
 }

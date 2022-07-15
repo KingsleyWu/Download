@@ -1,20 +1,18 @@
 package com.common.download.downloader
 
+import android.util.Log
 import com.common.download.DownloadResponse
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.http.*
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.InputStream
 
 object OkHttpDownloader : Downloader {
 
     private val downloadApi: DownloadApi by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
         Retrofit.Builder()
-            .baseUrl("https://download")
+            .baseUrl("https://google.com")
             .client(OkHttpClient.Builder().build())
             .build()
             .create(DownloadApi::class.java)
@@ -24,23 +22,27 @@ object OkHttpDownloader : Downloader {
         val response = downloadApi.download(start ?: "0", url)
         if (response.isSuccessful) {
             val responseBody = response.body()
+            val headers = response.headers()
+            Log.d("TAG", "download: $headers")
             responseBody ?: return DownloadResponse.Error(response.code(), "ResponseBody is null")
-            val supportRange = !response.headers()["Content-Range"].isNullOrEmpty()
+            val supportRange = !headers["Content-Range"].isNullOrEmpty()
             return DownloadResponse.Success(responseBody.contentLength(), supportRange, responseBody.byteStream())
         } else {
             return DownloadResponse.Error(response.code(), if (response.message() == "") "${response.code()}" else response.message())
         }
     }
 
-    override suspend fun head(url: String): DownloadResponse {
-        val response = downloadApi.head(url)
-        if (response.isSuccessful) {
-            val responseBody = response.body()
-            responseBody ?: return DownloadResponse.Error(response.code(), "ResponseBody is null")
-            val supportRange = !response.headers()["Content-Range"].isNullOrEmpty()
-            return DownloadResponse.Success(responseBody.contentLength(), supportRange, responseBody.byteStream())
+    override suspend fun get(url: String): DownloadResponse {
+        val response = downloadApi.get(url)
+        Log.d("TAG", "head response : $response")
+        return if (response.isSuccessful) {
+            val headers = response.headers()
+            Log.d("TAG", "head: $headers")
+            val supportRange = !headers["Accept-Ranges"].isNullOrEmpty()
+            val contentLength = headers["Content-length"]
+            DownloadResponse.Head(contentLength?.toLongOrNull() ?: 0, supportRange)
         } else {
-            return DownloadResponse.Error(response.code(), if (response.message() == "") "${response.code()}" else response.message())
+            DownloadResponse.Error(response.code(), if (response.message() == "") "${response.code()}" else response.message())
         }
     }
 
@@ -55,6 +57,6 @@ interface DownloadApi {
     @GET
     suspend fun download(@Header("RANGE") start: String? = "0", @Url url: String?): Response<ResponseBody>
 
-    @HEAD
-    suspend fun head(@Url url: String): Response<ResponseBody>
+    @GET
+    suspend fun get(@Url url: String): Response<Void>
 }

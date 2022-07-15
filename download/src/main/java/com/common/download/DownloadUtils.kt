@@ -170,9 +170,9 @@ object DownloadUtils {
         return getTaskFromMapOrDb(id) ?: DownloadTask(taskInfo = TaskInfo().apply {
             this.id = id
             tasks = mutableListOf<DownloadInfo>().apply {
-                this.add(DownloadInfo(0))
-                this.add(DownloadInfo(1))
-                this.add(DownloadInfo(2))
+                add(DownloadInfo(0))
+                add(DownloadInfo(1))
+                add(DownloadInfo(2))
             }
         }).also { taskMap[id] = it }
     }
