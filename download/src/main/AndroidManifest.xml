@@ -7,7 +7,7 @@
 
         <!-- 9.0及以上需要在這裡添加provider -->
         <provider
-            android:name=".DownloadProvider"
+            android:name=".base.DownloadProvider"
             android:authorities="${applicationId}.DownloadProvider"
             android:enabled="true"
             android:exported="false" />

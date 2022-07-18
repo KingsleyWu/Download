@@ -1,4 +1,4 @@
-package com.common.download
+package com.common.download.base
 
 import android.app.Application
 import android.content.ContentProvider

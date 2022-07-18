@@ -1,4 +1,4 @@
-package com.common.download.core
+package com.common.download.base
 
 import kotlinx.coroutines.CoroutineScope
 import kotlin.coroutines.EmptyCoroutineContext

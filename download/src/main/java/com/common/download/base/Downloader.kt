@@ -1,6 +1,6 @@
-package com.common.download.downloader
+package com.common.download.base
 
-import com.common.download.DownloadResponse
+import com.common.download.bean.DownloadResponse
 import com.common.download.DownloadUtils
 
 /**

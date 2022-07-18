@@ -1,4 +1,4 @@
-package com.common.download
+package com.common.download.bean
 
 import java.io.InputStream
 
@@ -13,10 +13,11 @@ sealed class DownloadResponse {
 
     /**
      * Head
+     * @param newUrl url，有可能經過了重定向，所以url不一樣了
      * @param contentLength 文件内容长度
      * @param supportRange 是否支持断点续传
      */
-    data class Head(val contentLength: Long, val supportRange: Boolean = false) : DownloadResponse()
+    data class Head(val newUrl: String, val contentLength: Long, val supportRange: Boolean = false) : DownloadResponse()
 
     /**
      * 失败

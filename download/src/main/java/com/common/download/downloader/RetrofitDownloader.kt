@@ -1,14 +1,15 @@
 package com.common.download.downloader
 
 import android.util.Log
-import com.common.download.DownloadResponse
+import com.common.download.bean.DownloadResponse
+import com.common.download.base.Downloader
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.http.*
 
-object OkHttpDownloader : Downloader {
+object RetrofitDownloader : Downloader {
 
     private val downloadApi: DownloadApi by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
         Retrofit.Builder()
@@ -40,7 +41,8 @@ object OkHttpDownloader : Downloader {
             Log.d("TAG", "head: $headers")
             val supportRange = !headers["Accept-Ranges"].isNullOrEmpty()
             val contentLength = headers["Content-length"]
-            DownloadResponse.Head(contentLength?.toLongOrNull() ?: 0, supportRange)
+            val newUrl = response.raw().request.url.toString()
+            DownloadResponse.Head(newUrl,contentLength?.toLongOrNull() ?: 0, supportRange)
         } else {
             DownloadResponse.Error(response.code(), if (response.message() == "") "${response.code()}" else response.message())
         }
