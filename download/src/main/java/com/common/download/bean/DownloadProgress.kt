@@ -64,4 +64,9 @@ class DownloadProgress {
         val result = (this * 100.0).toBigDecimal().divide((bottom * 1.0).toBigDecimal(), 2, BigDecimal.ROUND_HALF_UP)
         return result.toDouble()
     }
+
+    override fun toString(): String {
+        return "DownloadProgress(downloadSize=$downloadSize, totalSize=$totalSize, percent=${percentStr()})"
+    }
+
 }

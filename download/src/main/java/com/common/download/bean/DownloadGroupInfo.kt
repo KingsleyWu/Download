@@ -54,6 +54,6 @@ class DownloadGroupInfo(
     }
 
     override fun toString(): String {
-        return "GroupInfo(id=$id, unitId=$unitId, type='$type', current=$current, status=$status, message=$message, progress=$progress, createTime=$createTime, updateTime=$updateTime, needWifi=$needWifi, showNotification=$showNotification, notificationTitle='$notificationTitle', data=$data, abnormalExit=$abnormalExit, tasks=$tasks)"
+        return "DownloadGroupInfo(id=$id, unitId=$unitId, type='$type', current=$current, status=$status, message=$message, progress=$progress, createTime=$createTime, updateTime=$updateTime, needWifi=$needWifi, showNotification=$showNotification, notificationTitle='$notificationTitle', data=$data, abnormalExit=$abnormalExit, tasks=$tasks)"
     }
 }

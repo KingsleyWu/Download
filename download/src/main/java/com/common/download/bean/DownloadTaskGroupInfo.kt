@@ -19,6 +19,8 @@ open class DownloadTaskGroupInfo(
     var unitId: String? = "",
     /** 類型  */
     var type: String = DEFAULT_TYPE,
+    /** 保存文件的父文件夹名称  */
+    var dirName: String? = "",
     /** 當前下載的內容 */
     var current: DownloadTaskInfo? = null,
     /** 下載的狀態 [DownloadStatus.NONE] 0 无状态,[DownloadStatus.STARTED] 1 開始下载,[DownloadStatus.DOWNLOADING] 2 下载中,[DownloadStatus.PAUSED] 3 暂停,[DownloadStatus.COMPLETED] 4 完成,[DownloadStatus.FAILED] 5 错误，[DownloadStatus.PENDING] 6 等待中 */

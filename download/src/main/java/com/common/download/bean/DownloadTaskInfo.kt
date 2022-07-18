@@ -42,8 +42,6 @@ data class DownloadTaskInfo(
     var status: Int = DownloadStatus.NONE,
     /** 异常信息 */
     var message: String? = "",
-    /** 是否是子task */
-    var isChild: Boolean = false,
     /** 跟下载相关的数据信息 */
     var data: String? = null,
     /** 上一次更新的時間 */

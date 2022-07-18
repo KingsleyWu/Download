@@ -128,8 +128,9 @@ class DownloadTask(val groupInfo: DownloadGroupInfo) {
                                         if (TextUtils.isEmpty(info.path)) {
                                             val fileName =
                                                 "${info.fileName!!}${if (DownloadUtils.needDownloadSuffix) ".download" else ""}"
-                                            file = File(DownloadUtils.downloadFolder, info.fileName!!)
-                                            tempFile = File(DownloadUtils.downloadFolder, fileName)
+                                            val dirName = DownloadUtils.downloadFolder + if (groupInfo.dirName.isNullOrEmpty()) "" else "${File.separator}${groupInfo.dirName}"
+                                            file = File(dirName, info.fileName!!)
+                                            tempFile = File(dirName, fileName)
                                             info.path = file.absolutePath
                                         } else {
                                             val filePath =
