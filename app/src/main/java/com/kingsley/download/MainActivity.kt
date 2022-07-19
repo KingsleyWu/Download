@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -20,18 +22,59 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.LifecycleOwner
+import coil.compose.rememberAsyncImagePainter
 import com.common.download.DownloadUtils
+import com.common.download.bean.DGBuilder
+import com.common.download.bean.GTBuilder
+import com.common.download.utils.DownloadLog
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.kingsley.download.ui.base.Dialog
 import com.kingsley.download.ui.theme.DownloadTheme
 
 class MainActivity : ComponentActivity() {
+
+    var sameUrls = mutableListOf<String>().apply {
+        add("https://imtt.dd.qq.com/16891/apk/BC1986D2E9B28DFB56761AC526609026.apk")
+        add("https://imtt.dd.qq.com/16891/apk/BC1986D2E9B28DFB56761AC526609026.apk")
+        add("https://imtt.dd.qq.com/16891/apk/BC1986D2E9B28DFB56761AC526609026.apk")
+    }
+
+    var urls = mutableListOf<String>().apply {
+        add("https://ab253dfb3b9c9f7e2580baeb3aa0c165.dd.cdntips.com/imtt.dd.qq.com/16891/apk/B20AD9A014A9CCA09DBAD4EA18A56FD9.apk")
+        add("https://imtt.dd.qq.com/16891/apk/BC1986D2E9B28DFB56761AC526609026.apk")
+    }
+    val sameUrlsUnitId = DownloadUtils.buildId(sameUrls)
+    val sameUrlsGroupInfo = DGBuilder()
+        .id(sameUrlsUnitId)
+        .addAll {
+            sameUrls.map {
+                GTBuilder()
+                    .groupId(sameUrlsUnitId)
+                    .url(it)
+                    .build()
+            }
+        }.build()
+
+    val urlsUnitId = DownloadUtils.buildId(urls)
+    val urlsGroupInfo = DGBuilder()
+        .id(urlsUnitId)
+        .addAll {
+            urls.map {
+                GTBuilder()
+                    .groupId(urlsUnitId)
+                    .url(it)
+                    .build()
+            }
+        }.build()
+    val type = object : TypeToken<List<DemoListItem>>() {}.type
+    val mockData = Gson().fromJson<List<DemoListItem>>(mock_json, type)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        DownloadUtils.cancel(1)
+        DownloadLog.init(true, "下載")
+//        DownloadUtils.cancel(DownloadUtils.buildUnitId(urls))
         setContent {
             DownloadTheme {
                 // A surface container using the 'background' color from the theme
@@ -39,15 +82,59 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Greeting("Android", this)
+                    LazyColumn{
+                        items(mockData) {
+                            var progress by remember(it.url) {
+                                mutableStateOf(DownloadUtils.request(it.url).groupInfo.progress.percentStr())
+                            }
+                            DownloadItem(it, progress){ item ->
+                                DownloadUtils.request(item.url)
+                                    .observer(this@MainActivity) { info ->
+                                        Log.d("TAG", "mockData: $info")
+                                        progress = info.progress.percentStr()
+                                    }.download()
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+class DemoListItem(
+    val name: String,
+    val icon: String,
+    val url: String,
+    val size: String
+) {
+    var progress: String? = ""
+}
+
 @Composable
-fun Greeting(name: String, lifecycleOwner: LifecycleOwner) {
+fun DownloadItem(item: DemoListItem, progress: String, click: (DemoListItem) -> Unit = {}) {
+    Column {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 5.dp)
+                .clickable {
+                    click(item)
+                }
+        ) {
+            Icon(
+                painter = rememberAsyncImagePainter(model = item.icon),
+                contentDescription = "",
+                Modifier.size(56.dp)
+            )
+            Text(text = item.name)
+        }
+        Text(text = progress)
+    }
+}
+
+@Composable
+fun Greeting(name: String, click: () -> Unit = {}) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     Box(contentAlignment = Alignment.Center) {
         Text(text = "Hello $name!", modifier = Modifier
@@ -55,11 +142,7 @@ fun Greeting(name: String, lifecycleOwner: LifecycleOwner) {
             .padding(16.dp)
             .clickable {
                 showDialog = !showDialog
-                DownloadUtils
-                    .download(1)
-                    .observer(lifecycleOwner) {
-                        Log.d("TAG", "Greeting: $it")
-                    }
+                click()
             })
     }
     if (showDialog) {
@@ -131,21 +214,6 @@ fun Greeting(name: String, lifecycleOwner: LifecycleOwner) {
 @Composable
 fun DefaultPreview() {
     DownloadTheme {
-        Greeting("Android", LifecycleOwner {
-            return@LifecycleOwner object : Lifecycle(){
-                override fun addObserver(observer: LifecycleObserver) {
-
-                }
-
-                override fun removeObserver(observer: LifecycleObserver) {
-
-                }
-
-                override fun getCurrentState(): State {
-                    return Lifecycle.State.CREATED
-                }
-
-            }
-        })
+        Greeting("Android")
     }
 }

@@ -1,8 +1,8 @@
 package com.common.download.downloader
 
-import android.util.Log
 import com.common.download.bean.DownloadResponse
 import com.common.download.base.Downloader
+import com.common.download.utils.DownloadLog
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -24,7 +24,7 @@ object RetrofitDownloader : Downloader {
         if (response.isSuccessful) {
             val responseBody = response.body()
             val headers = response.headers()
-            Log.d("TAG", "download: $headers")
+            DownloadLog.d("download: $headers")
             responseBody ?: return DownloadResponse.Error(response.code(), "ResponseBody is null")
             val supportRange = !headers["Content-Range"].isNullOrEmpty()
             return DownloadResponse.Success(responseBody.contentLength(), supportRange, responseBody.byteStream())
@@ -35,10 +35,10 @@ object RetrofitDownloader : Downloader {
 
     override suspend fun get(url: String): DownloadResponse {
         val response = downloadApi.get(url)
-        Log.d("TAG", "head response : $response")
+        DownloadLog.d("head response : $response")
         return if (response.isSuccessful) {
             val headers = response.headers()
-            Log.d("TAG", "head: $headers")
+            DownloadLog.d( "head: $headers")
             val supportRange = !headers["Accept-Ranges"].isNullOrEmpty()
             val contentLength = headers["Content-length"]
             val newUrl = response.raw().request.url.toString()

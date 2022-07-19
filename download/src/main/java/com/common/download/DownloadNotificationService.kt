@@ -13,7 +13,7 @@ class DownloadNotificationService: Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
-        val taskId = intent?.getLongExtra(KEY_TASK_ID, -1)
+        val taskId = intent?.getStringExtra(KEY_TASK_ID) ?: ""
         when (action) {
             DownloadAction.DOWNLOAD_JUMP_TO -> {
                 //跳转到其他应用市场下载
@@ -32,24 +32,24 @@ class DownloadNotificationService: Service() {
             }
             DownloadAction.DOWNLOAD_PENDING_INTENT -> {
                 //从通知栏点击启动一个下载
-                if (taskId != null && taskId != -1L) {
+                if (taskId.isNotEmpty()) {
                     DownloadUtils.download(taskId)
                     val notifyId = intent.getIntExtra(KEY_NOTIFY_ID, 0)
                     NotificationManagerCompat.from(this).cancel(notifyId)
                 }
             }
             DownloadAction.DOWNLOAD_PAUSE -> {
-                if (taskId != null && taskId != -1L) {
+                if (taskId.isNotEmpty()) {
                     DownloadUtils.pause(taskId)
                 }
             }
             DownloadAction.DOWNLOAD_CANCEL -> {
-                if (taskId != null && taskId != -1L) {
+                if (taskId.isNotEmpty()) {
                     DownloadUtils.cancel(taskId)
                 }
             }
             DownloadAction.DOWNLOAD_START -> {
-                if (taskId != null && taskId != -1L) {
+                if (taskId.isNotEmpty()) {
                     DownloadUtils.download(taskId)
                 }
             }

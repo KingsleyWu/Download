@@ -64,6 +64,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.foundation)
 
+    implementation(libs.google.gson)
+
     //Compose Utils
     implementation(libs.coil.compose)
     implementation(libs.activity.compose)

@@ -27,7 +27,7 @@ interface TasksDao {
      * 删除
      */
     @Query("DELETE FROM tasks_record WHERE id = :id")
-    fun delete(id: Long): Int
+    fun delete(id: String): Int
     /**
      * 查询所有任务
      */
@@ -42,15 +42,15 @@ interface TasksDao {
      * 通过id查询任务
      */
     @Query("SELECT * FROM tasks_record WHERE id = :id")
-    fun get(id: Long): DownloadTaskGroupInfo?
+    fun get(id: String): DownloadTaskGroupInfo?
     /**
      * 通过ids查询任务列表
      */
     @Query("SELECT * FROM tasks_record WHERE id IN(:id)")
-    fun get(vararg id: Long): List<DownloadTaskGroupInfo>
+    fun get(vararg id: String): List<DownloadTaskGroupInfo>
     /**
      * 通过id更新 data
      */
     @Query("UPDATE tasks_record SET data = :data WHERE id = :id")
-    fun update(id: Long, data: String): Int
+    fun update(id: String, data: String): Int
 }

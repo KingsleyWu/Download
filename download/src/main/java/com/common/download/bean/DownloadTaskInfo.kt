@@ -13,13 +13,11 @@ import com.common.download.db.DownloadDBUtils
     indices = [Index("url", unique = true)]
 )
 data class DownloadTaskInfo(
-    @PrimaryKey
     /** 下載用的url */
+    @PrimaryKey
     var url: String = "",
-    /** 下載用的url, 重定向後的 url */
-    var redirectUrl: String = "",
     /** groupId */
-    var groupId: Long = 0,
+    var groupId: String = "",
     /** 在 group tasks 的位置 */
     var index: Int = 0,
     /** 如需要跳轉的動作可以放到此位置 */
@@ -45,7 +43,9 @@ data class DownloadTaskInfo(
     /** 跟下载相关的数据信息 */
     var data: String? = null,
     /** 上一次更新的時間 */
-    var updateTime: Long = 0
+    var updateTime: Long = 0,
+    /** 下載用的url, 重定向後的 url */
+    var redirectUrl: String = ""
 ) {
 
     constructor() : this("")
@@ -67,5 +67,80 @@ data class DownloadTaskInfo(
         this.status = status
         this.message = message
         this.updateTime = updateTime
+    }
+}
+
+class GTBuilder {
+
+    private var taskInfo = DownloadTaskInfo()
+
+    /** 下載用的url */
+    fun url(url: String?): GTBuilder {
+        taskInfo.url = url ?: ""
+        return this
+    }
+
+    /** groupId */
+    fun groupId(groupId: String): GTBuilder {
+        taskInfo.groupId = groupId
+        return this
+    }
+
+    /** 在 group tasks 的位置 */
+    fun index(index: Int): GTBuilder {
+        taskInfo.index = index
+        return this
+    }
+
+    /** 如需要跳轉的動作可以放到此位置 */
+    fun action(action: String?): GTBuilder {
+        taskInfo.action = action ?: ""
+        return this
+    }
+
+    /** 下載文件時的通知標題 */
+    fun title(title: String?): GTBuilder {
+        taskInfo.title = title ?: ""
+        return this
+    }
+
+    /** 下載的文件類型，用於標識下載文件 */
+    fun type(type: String?): GTBuilder {
+        taskInfo.type = type ?: ""
+        return this
+    }
+
+    /** flag */
+    fun flag(flag: String?): GTBuilder {
+        taskInfo.flag = flag ?: ""
+        return this
+    }
+
+    /** 保存的地址 */
+    fun path(path: String?): GTBuilder {
+        taskInfo.path = path
+        return this
+    }
+
+    /** 下載保存的文件名稱 */
+    fun fileName(fileName: String?): GTBuilder {
+        taskInfo.fileName = fileName
+        return this
+    }
+
+    /** 跟下载相关的数据信息 */
+    fun data(data: String?): GTBuilder {
+        taskInfo.data = data
+        return this
+    }
+
+    fun build(): DownloadTaskInfo {
+        if (taskInfo.url.isEmpty()) {
+            throw IllegalArgumentException("url must not empty")
+        }
+        if (taskInfo.groupId.isEmpty()) {
+            throw IllegalArgumentException("groupId must not empty")
+        }
+        return taskInfo
     }
 }

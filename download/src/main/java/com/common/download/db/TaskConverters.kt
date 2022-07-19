@@ -8,6 +8,17 @@ import java.lang.reflect.Type
 
 class TaskConverters {
     private val mGson : Gson by lazy { Gson() }
+    private val mType: Type by lazy { object : TypeToken<List<DownloadTaskInfo>>() {}.type }
+
+    @TypeConverter
+    fun stringToList(value: String?): List<DownloadTaskInfo>? {
+        return mGson.fromJson(value, mType)
+    }
+
+    @TypeConverter
+    fun listToString(list: List<DownloadTaskInfo>?): String {
+        return mGson.toJson(list)
+    }
 
     @TypeConverter
     fun stringToObject(value: String?): DownloadTaskInfo? {

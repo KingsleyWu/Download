@@ -3,7 +3,6 @@ package com.common.download.db
 import com.common.download.bean.DownloadTaskGroupInfo
 import com.common.download.base.appContext
 import com.common.download.bean.DownloadTaskInfo
-import com.common.download.bean.DownloadGroupInfo
 
 object DownloadDBUtils {
 
@@ -23,10 +22,6 @@ object DownloadDBUtils {
         database.taskDao()
     }
 
-    private val groupDao: GroupTaskDao by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
-        database.groupDao()
-    }
-
     fun insertOrReplaceTasks(taskGroupInfo: DownloadTaskGroupInfo) {
         tasksDao.insert(taskGroupInfo)
     }
@@ -35,12 +30,12 @@ object DownloadDBUtils {
         tasksDao.delete(taskGroupInfo)
     }
 
-    fun deleteTasks(id: Long) {
+    fun deleteTasks(id: String) {
         tasksDao.delete(id)
     }
 
-    fun get(id: Long): DownloadGroupInfo? {
-        return groupDao.get(id)
+    fun getGroupInfo(id: String): DownloadTaskGroupInfo? {
+        return tasksDao.get(id)
     }
 
     fun insertOrReplaceTask(info: DownloadTaskInfo) {
@@ -55,9 +50,8 @@ object DownloadDBUtils {
         taskDao.delete(url)
     }
 
-    fun get(url: String): DownloadTaskInfo? {
+    fun getTaskInfo(url: String): DownloadTaskInfo? {
         return taskDao.get(url)
     }
-
 
 }
