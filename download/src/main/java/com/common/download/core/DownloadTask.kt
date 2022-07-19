@@ -320,11 +320,13 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
      * 暫停下载
      */
     internal fun pause() {
+        DownloadLog.d("暫停下载， 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
         job?.cancel()
         groupInfo.let {
             coroutineScope.launch(Dispatchers.IO) {
                 it.update(DownloadStatus.PAUSED, "", System.currentTimeMillis())
-                it.current?.update(DownloadStatus.FAILED, "", System.currentTimeMillis())
+                it.current?.update(DownloadStatus.PAUSED, "", System.currentTimeMillis())
+                it.updateProgress()
                 DownloadDBUtils.insertOrReplaceTasks(it)
                 withContext(Dispatchers.Main) {
                     liveData.value = it
@@ -338,6 +340,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
      */
     internal fun pending() {
         job?.cancel()
+        DownloadLog.d("等待下载， 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
         groupInfo.let {
             coroutineScope.launch(Dispatchers.IO) {
                 it.update(DownloadStatus.PENDING, "", System.currentTimeMillis())
@@ -364,6 +367,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
      */
     internal fun cancel(needCallback: Boolean = true) {
         job?.cancel()
+        DownloadLog.d("取消下载， 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
         groupInfo.let {
             coroutineScope.launch(Dispatchers.IO) {
                 it.reset()

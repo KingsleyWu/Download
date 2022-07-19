@@ -136,6 +136,7 @@ object DownloadUtils {
     /**
      * 下載任务
      */
+    @JvmStatic
     fun download(id: String) {
         getTaskFromMapOrDb(id)?.download()
     }

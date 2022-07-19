@@ -88,11 +88,16 @@ class MainActivity : ComponentActivity() {
                                 mutableStateOf(DownloadUtils.request(it.url).groupInfo.progress.percentStr())
                             }
                             DownloadItem(it, progress){ item ->
-                                DownloadUtils.request(item.url)
+                                val downloadTask = DownloadUtils.request(item.url)
                                     .observer(this@MainActivity) { info ->
                                         Log.d("TAG", "mockData: $info")
                                         progress = info.progress.percentStr()
-                                    }.download()
+                                    }
+                                if (downloadTask.downloading()) {
+                                    DownloadUtils.pause(downloadTask.groupInfo.id)
+                                } else {
+                                    downloadTask.download()
+                                }
                             }
                         }
                     }
