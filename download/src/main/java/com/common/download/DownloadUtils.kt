@@ -1,14 +1,28 @@
 package com.common.download
 
+import android.annotation.SuppressLint
+import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.os.Build
 import android.os.Environment
+import android.text.TextUtils
+import com.common.download.base.NotificationHelper
 import com.common.download.base.appContext
 import com.common.download.bean.*
 import com.common.download.core.DownloadTask
 import com.common.download.db.DownloadDBUtils
 import com.common.download.downloader.RetrofitDownloader
-import com.common.download.utils.DownloadAction
+import com.common.download.utils.*
 import com.common.download.utils.DownloadBroadcastUtil
-import com.common.download.utils.DownloadLog
+import com.common.download.utils.NetworkUtils
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -30,6 +44,10 @@ object DownloadUtils {
      * 下載器
      */
     var downloader = RetrofitDownloader
+    /**
+     * 通知幫助類
+     */
+    var notificationHelper: NotificationHelper? = DownloadNotificationHelper()
 
     /**
      * 是否需要 .download 後綴，默認為 true
@@ -72,9 +90,48 @@ object DownloadUtils {
     private val pendingTaskMap = ConcurrentHashMap<String, DownloadTask>()
 
     /**
+     * wifi 是否可用
+     */
+    var sWifiAvailable = NetworkUtils.isWifiAvailable(appContext)
+        internal set
+
+    /**
+     * 網絡 是否可用
+     */
+    var sConnectivityAvailable = NetworkUtils.isNetworkAvailable(appContext)
+        internal set
+
+    /**
+     * 網絡監聽
+     */
+    private val mConnectivityChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            changeConnectivity()
+        }
+    }
+
+    /**
+     * 網絡監聽
+     */
+    private val mNetworkChangeCallback = object : ConnectivityManager.NetworkCallback() {
+
+        override fun onAvailable(network: Network) {
+            changeConnectivity()
+        }
+
+        override fun onLost(network: Network) {
+            changeConnectivity()
+        }
+    }
+
+    init {
+        initConnectivityChangeReceiver()
+    }
+
+    /**
      * 運行下一個下載
      */
-    internal fun launchNext(taskInfo: DownloadTaskGroupInfo) {
+    internal fun launchNext(taskInfo: DownloadGroupTaskInfo) {
         val id = taskInfo.id
         runningTaskMap.remove(id)
         if (runningTaskMap.size < MAX_TASK && pendingTaskMap.size > 0) {
@@ -163,7 +220,9 @@ object DownloadUtils {
                     }
                 } else {
                     DownloadLog.d("加入到等待隊列， 當前 Group id = ${task.groupInfo.id}， percent = ${task.groupInfo.progress.percentStr()}")
-                    downloadTask.pending()
+                    if (task.groupInfo.status != DownloadStatus.PENDING) {
+                        downloadTask.pending()
+                    }
                     pendingTaskMap[task.groupInfo.id] = downloadTask
                 }
             } else {
@@ -174,7 +233,8 @@ object DownloadUtils {
     }
 
     /**
-     * 通過 groupInfo 獲取 DownloadTask，當沒有獲取到時會進行創建，但創建完後還沒進入數據庫
+     * 通過 groupInfo 獲取 DownloadTask，當沒有獲取到時會進行創建，
+     * 如沒有則創建並加入 db
      */
     @JvmStatic
     fun request(builder: DGBuilder): DownloadTask {
@@ -182,15 +242,17 @@ object DownloadUtils {
     }
 
     /**
-     * 通過 groupInfo 獲取 DownloadTask，當沒有獲取到時會進行創建，但創建完後還沒進入數據庫
+     * 通過 groupInfo 獲取 DownloadTask，當沒有獲取到時會進行創建，
+     * 如沒有則創建並加入 db
      */
     @JvmStatic
-    fun request(groupInfo: DownloadTaskGroupInfo): DownloadTask {
+    fun request(groupInfo: DownloadGroupTaskInfo): DownloadTask {
         return getTaskFromMapOrDb(groupInfo.id) ?: createDownloadTask(groupInfo)
     }
 
     /**
-     * 通過單個 url 獲取 DownloadTask，當沒有獲取到時會進行創建，但創建完後還沒進入數據庫
+     * 通過單個 url 獲取 DownloadTask，當沒有獲取到時會進行創建，
+     * 如沒有則創建並加入 db
      */
     @JvmStatic
     fun request(
@@ -212,12 +274,32 @@ object DownloadUtils {
             ))
     }
 
+    /**
+     * 通過 id 獲取 DownloadTask
+     * 如沒有則創建並加入 db
+     */
     private fun request(id: String, builder: DGBuilder): DownloadTask {
         return getTaskFromMapOrDb(id) ?: createDownloadTask(builder.build())
     }
 
-    private fun createDownloadTask(groupInfo: DownloadTaskGroupInfo): DownloadTask {
-        return DownloadTask(groupInfo).also { taskMap[groupInfo.id] = it }
+    /**
+     * 創建並加入 db
+     */
+    private fun createDownloadTask(groupInfo: DownloadGroupTaskInfo): DownloadTask {
+        return DownloadTask(groupInfo).also {
+            taskMap[groupInfo.id] = it
+            // 防止之前文件存在，初始化前进行设置 currentLength
+            groupInfo.tasks.forEach { info ->
+                if (!TextUtils.isEmpty(info.path)) {
+                    val filePath = "${info.path!!}${if (needDownloadSuffix) ".download" else ""}"
+                    val tempFile = File(filePath)
+                    if (tempFile.exists()) {
+                        info.currentLength = tempFile.length()
+                    }
+                }
+            }
+            DownloadDBUtils.insertOrReplaceTasks(groupInfo)
+        }
     }
 
     /**
@@ -229,10 +311,16 @@ object DownloadUtils {
         return getTaskFromMapOrDb(id)
     }
 
+    /**
+     * 從 taskMap 中獲取或 db 中獲取
+     */
     private fun getTaskFromMapOrDb(id: String): DownloadTask? {
         return taskMap[id] ?: getTaskFromDb(id)
     }
 
+    /**
+     * 從 db 中獲取
+     */
     private fun getTaskFromDb(id: String): DownloadTask? {
         return DownloadDBUtils.getGroupInfo(id)?.let {
             return createDownloadTask(it)
@@ -259,6 +347,9 @@ object DownloadUtils {
         return id
     }
 
+    /**
+     * 拼接 url
+     */
     private fun Iterable<String>.sumOfUrl(selector: (String) -> String): String {
         val sum = StringBuilder()
         for (element in this) {
@@ -267,4 +358,77 @@ object DownloadUtils {
         return sum.toString()
     }
 
+    /* 網絡監聽 start */
+
+    @Suppress("DEPRECATION")
+    @SuppressLint("ObsoleteSdkInt")
+    private fun initConnectivityChangeReceiver() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val connectivityManager =
+                appContext.getSystemService(Service.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager?.registerDefaultNetworkCallback(mNetworkChangeCallback)
+            } else {
+                val builder = NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_BLUETOOTH)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+                connectivityManager?.registerNetworkCallback(builder.build(), mNetworkChangeCallback)
+            }
+        } else {
+            // 注册网络变化监听
+            appContext.registerReceiver(
+                mConnectivityChangeReceiver,
+                IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+            )
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun changeConnectivity() {
+        try {
+            val cm =
+                appContext.getSystemService(Service.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                    ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val activeNetwork = cm.activeNetwork
+                if (activeNetwork != null) {
+                    sConnectivityAvailable = true
+                    sWifiAvailable = cm.getNetworkCapabilities(activeNetwork)
+                            ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                            ?: false
+                } else {
+                    sWifiAvailable = false
+                    sConnectivityAvailable = false
+                }
+            } else if (cm.activeNetworkInfo != null) {
+                sConnectivityAvailable = true
+                val networkType = cm.activeNetworkInfo!!.type
+                //wifi active
+                sWifiAvailable = networkType == ConnectivityManager.TYPE_WIFI
+            } else {
+                sConnectivityAvailable = false
+                sWifiAvailable = false
+            }
+        } catch (e: Exception) {
+            DownloadLog.e(e)
+        } finally {
+            performNetworkAction()
+        }
+    }
+
+    private fun performNetworkAction() {
+        DownloadLog.e( "performNetworkAction sConnectivityAvailable = $sConnectivityAvailable, sWifiAvailable = $sWifiAvailable ")
+        if (runningTaskMap.isNotEmpty()) {
+            for (groupTask in runningTaskMap.values) {
+                if (groupTask.status() != DownloadStatus.COMPLETED && groupTask.status() != DownloadStatus.PAUSED) {
+                    groupTask.performNetworkAction()
+                }
+            }
+        }
+    }
+
+    /* 網絡監聽 end */
 }

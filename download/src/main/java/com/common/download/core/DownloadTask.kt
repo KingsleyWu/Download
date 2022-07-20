@@ -8,7 +8,7 @@ import com.common.download.bean.DownloadResponse
 import com.common.download.DownloadUtils
 import com.common.download.base.DownloadScope
 import com.common.download.bean.DownloadStatus
-import com.common.download.bean.DownloadTaskGroupInfo
+import com.common.download.bean.DownloadGroupTaskInfo
 import com.common.download.bean.DownloadTaskInfo
 import com.common.download.db.DownloadDBUtils
 import com.common.download.utils.DownloadAction
@@ -18,7 +18,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.io.*
 
-class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
+class DownloadTask(val groupInfo: DownloadGroupTaskInfo) {
     private val coroutineScope: CoroutineScope = DownloadScope
 
     /** 当前下载的 job */
@@ -27,7 +27,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
     /**
      *  监听器
      */
-    private val liveData = MutableLiveData<DownloadTaskGroupInfo>()
+    private val liveData = MutableLiveData<DownloadGroupTaskInfo>()
 
     internal fun start() {
         if (job == null || !job!!.isActive) {
@@ -35,8 +35,8 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                 flow {
                     DownloadLog.d("開始下載， 當前的狀態 ${groupInfo.status}")
                     // 如果沒有開始下載過就直接設置為開始,其他狀態則表示已經開始下載過了
-                    if (groupInfo.status == DownloadStatus.NONE) {
-                        groupInfo.status = DownloadStatus.STARTED
+                    if (groupInfo.status != DownloadStatus.COMPLETED) {
+                        groupInfo.status = DownloadStatus.WAITING
                     }
                     emit(groupInfo)
                     DownloadLog.d("第一次判斷 url 或 重定向的url 是否存在重複內容")
@@ -66,8 +66,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                             } else if (head is DownloadResponse.Error) {
                                 // 出現錯誤則直接報錯，讓用戶重試
                                 groupInfo.current = info
-                                info.update(DownloadStatus.FAILED, head.message, System.currentTimeMillis())
-                                groupInfo.update(DownloadStatus.FAILED, head.message, System.currentTimeMillis())
+                                groupInfo.updateStatusAndMessage(DownloadStatus.FAILED, head.message)
                                 DownloadLog.d("獲取內容長度失敗， url = ${info.url}")
                                 emit(groupInfo)
                                 return@flow
@@ -91,7 +90,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                         when (info.status) {
                             // 无状态, 開始下載, 暫停, 错误
                             DownloadStatus.NONE,
-                            DownloadStatus.STARTED,
+                            DownloadStatus.WAITING,
                             DownloadStatus.PAUSED,
                             DownloadStatus.DOWNLOADING,
                             DownloadStatus.COMPLETED,
@@ -140,7 +139,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                                         val fileName =
                                             "${info.fileName!!}${if (DownloadUtils.needDownloadSuffix) ".download" else ""}"
                                         val dirName =
-                                            DownloadUtils.downloadFolder + if (groupInfo.dirName.isNullOrEmpty()) "" else "${File.separator}${groupInfo.dirName}"
+                                            DownloadUtils.downloadFolder + (if (groupInfo.dirName.isNullOrEmpty()) "" else "${File.separator}${groupInfo.dirName}")
                                         file = File(dirName, info.fileName!!)
                                         tempFile = File(dirName, fileName)
                                         info.path = file.absolutePath
@@ -194,14 +193,12 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                                                 val currentTime = System.currentTimeMillis()
                                                 // 間隔 DownloadUtils.updateTime 時間後更新進度
                                                 if (currentTime - info.updateTime > DownloadUtils.updateTime) {
-                                                    info.update(DownloadStatus.DOWNLOADING, "", currentTime)
-                                                    groupInfo.update(DownloadStatus.DOWNLOADING, "", currentTime)
+                                                    groupInfo.updateStatusAndMessage(DownloadStatus.DOWNLOADING, "")
                                                     emit(groupInfo)
                                                 }
                                             }
                                         } catch (e: Exception) {
-                                            info.update(DownloadStatus.FAILED, e.message, System.currentTimeMillis())
-                                            groupInfo.update(DownloadStatus.FAILED, e.message, System.currentTimeMillis())
+                                            groupInfo.updateStatusAndMessage(DownloadStatus.FAILED, e.message)
                                             emit(groupInfo)
                                             break
                                         } finally {
@@ -219,8 +216,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                                         }
                                     }
                                 } else if (result is DownloadResponse.Error) {
-                                    info.update(DownloadStatus.FAILED, result.message, System.currentTimeMillis())
-                                    groupInfo.update(DownloadStatus.FAILED, result.message, System.currentTimeMillis())
+                                    groupInfo.updateStatusAndMessage(DownloadStatus.FAILED, result.message)
                                     emit(groupInfo)
                                     break
                                 }
@@ -232,18 +228,10 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                     .cancellable()
                     .catch {
                         it.printStackTrace()
+                        DownloadLog.d("start catch : status = ${groupInfo.status}, id = ${groupInfo.id}, message = ${it.message}")
                         // 异常
                         groupInfo.let { info ->
-                            info.update(
-                                DownloadStatus.FAILED,
-                                it.message,
-                                System.currentTimeMillis()
-                            )
-                            info.current?.update(
-                                DownloadStatus.FAILED,
-                                it.message,
-                                System.currentTimeMillis()
-                            )
+                            info.updateStatusAndMessage(DownloadStatus.FAILED, it.message)
                             emit(info)
                             DownloadBroadcastUtil.sendBroadcast(DownloadAction.Failed(info))
                         }
@@ -251,7 +239,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                         DownloadUtils.launchNext(groupInfo)
                     }
                     .onCompletion {
-                        DownloadLog.d("start5 onCompletion : status = ${groupInfo.status}, id = ${groupInfo.id}")
+                        DownloadLog.d("start onCompletion : status = ${groupInfo.status}, id = ${groupInfo.id}")
                         // 完成下載或出錯了，繼續下一個下載
                         if (groupInfo.status == DownloadStatus.COMPLETED || groupInfo.status == DownloadStatus.FAILED) {
                             DownloadUtils.launchNext(groupInfo)
@@ -266,17 +254,14 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                         }
                         it.updateProgress()
                         DownloadDBUtils.insertOrReplaceTasks(it)
-                        DownloadLog.d("當前 Group 狀態 status : ${it.status}， id = ${it.id}， percent = ${it.progress.percentStr()}")
+                        DownloadLog.d("start collect 當前 Group 狀態 status : ${it.status}， id = ${it.id}， percent = ${it.progress.percentStr()}")
                         coroutineScope.launch(Dispatchers.Main) {
                             // 结果
                             liveData.value = it
+                            // 创建通知
+                            DownloadUtils.notificationHelper?.createNotification(it)
                             when (it.status) {
-                                DownloadStatus.COMPLETED -> DownloadBroadcastUtil.sendBroadcast(
-                                    DownloadAction.Success(it)
-                                )
-                                DownloadStatus.STARTED -> DownloadBroadcastUtil.sendBroadcast(
-                                    DownloadAction.Start(it)
-                                )
+                                DownloadStatus.COMPLETED, DownloadStatus.WAITING -> DownloadBroadcastUtil.sendBroadcast(it)
                                 else -> {}
                             }
                         }
@@ -289,12 +274,15 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
         val urlList = groupInfo.tasks.map { it.redirectUrl.ifEmpty { it.url } }
         val urlSet = urlList.toSet()
         if (urlSet.size != groupInfo.tasks.size) {
-            groupInfo.status = DownloadStatus.FAILED
-            groupInfo.message = "Duplicate url !!!"
-            groupInfo.updateTime = System.currentTimeMillis()
+            groupInfo.update(DownloadStatus.FAILED, "Duplicate url !!!", System.currentTimeMillis())
             return true
         }
         return false
+    }
+
+    private fun DownloadGroupTaskInfo.updateStatusAndMessage(status: Int, message: String?, currentTime: Long = System.currentTimeMillis()) {
+        current?.update(status, message, currentTime)
+        update(status, message, currentTime)
     }
 
     /**
@@ -330,6 +318,8 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                 DownloadDBUtils.insertOrReplaceTasks(it)
                 withContext(Dispatchers.Main) {
                     liveData.value = it
+                    // 创建通知
+                    DownloadUtils.notificationHelper?.createNotification(it)
                 }
             }
         }
@@ -348,6 +338,8 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                 DownloadDBUtils.insertOrReplaceTasks(it)
                 withContext(Dispatchers.Main) {
                     liveData.value = it
+                    // 创建通知
+                    DownloadUtils.notificationHelper?.createNotification(it)
                 }
             }
         }
@@ -375,11 +367,12 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
                 if (needCallback) {
                     withContext(Dispatchers.Main) {
                         liveData.value = it
+                        // 创建通知
+                        DownloadUtils.notificationHelper?.createNotification(it)
                     }
                 }
                 //同时删除已下载的文件
                 it.tasks.forEach { task ->
-                    DownloadDBUtils.deleteTask(task)
                     task.path?.let { path ->
                         val file = File(path)
                         if (file.exists()) {
@@ -413,13 +406,12 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
     /**
      * 添加下载任务观察者
      * @param lifecycleOwner lifecycleOwner
+     * @param needRemoveObservers needRemoveObservers
      * @param observer observer
      */
-    fun observer(
-        lifecycleOwner: LifecycleOwner,
-        observer: Observer<DownloadTaskGroupInfo>
-    ): DownloadTask {
+    fun observer(lifecycleOwner: LifecycleOwner, needRemoveObservers: Boolean = true, observer: Observer<DownloadGroupTaskInfo>): DownloadTask {
         coroutineScope.launch(Dispatchers.Main) {
+            if (needRemoveObservers) { liveData.removeObservers(lifecycleOwner) }
             liveData.observe(lifecycleOwner, observer)
         }
         return this
@@ -429,7 +421,7 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
      * 移除下载任务观察者
      * @param observer observer
      */
-    fun removeObserver(observer: Observer<DownloadTaskGroupInfo>): DownloadTask {
+    fun removeObserver(observer: Observer<DownloadGroupTaskInfo>): DownloadTask {
         coroutineScope.launch(Dispatchers.Main) {
             liveData.removeObserver(observer)
         }
@@ -439,10 +431,11 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
     /**
      * 添加下载任务观察者並下载
      * @param lifecycleOwner lifecycleOwner
+     * @param needRemoveObservers needRemoveObservers
      * @param observer observer
      */
-    fun download(lifecycleOwner: LifecycleOwner, observer: Observer<DownloadTaskGroupInfo>) {
-        DownloadUtils.download(observer(lifecycleOwner, observer))
+    fun download(lifecycleOwner: LifecycleOwner, needRemoveObservers: Boolean = true, observer: Observer<DownloadGroupTaskInfo>) {
+        DownloadUtils.download(observer(lifecycleOwner, needRemoveObservers, observer))
     }
 
     /**
@@ -452,5 +445,26 @@ class DownloadTask(val groupInfo: DownloadTaskGroupInfo) {
         DownloadUtils.download(this)
     }
 
+    /**
+     * 暫停
+     */
+    fun paused() {
+        DownloadUtils.pause(groupInfo.id)
+    }
+
+    /**
+     * 網絡變動時的處理
+     */
+    internal fun performNetworkAction() {
+        if (groupInfo.needWifi && DownloadUtils.sWifiAvailable) {
+            if (groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status != DownloadStatus.DOWNLOADING) {
+                download()
+            }
+        } else if (!groupInfo.needWifi && DownloadUtils.sConnectivityAvailable && groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status != DownloadStatus.DOWNLOADING) {
+            download()
+        } else if (groupInfo.status != DownloadStatus.COMPLETED) {
+            paused()
+        }
+    }
 }
 

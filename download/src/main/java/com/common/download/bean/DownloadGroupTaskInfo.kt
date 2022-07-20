@@ -12,7 +12,7 @@ import com.common.download.db.DownloadDBUtils
     tableName = DownloadDBUtils.TASKS_TABLE_NAME,
     indices = [Index("id", unique = true)]
 )
-class DownloadTaskGroupInfo(
+class DownloadGroupTaskInfo(
     /** id urls.hashcode + "_" + type  */
     @PrimaryKey
     var id: String = "",
@@ -24,7 +24,7 @@ class DownloadTaskGroupInfo(
     var dirName: String? = "",
     /** 當前下載的內容 */
     var current: DownloadTaskInfo? = null,
-    /** 下載的狀態 [DownloadStatus.NONE] 0 无状态,[DownloadStatus.STARTED] 1 開始下载,[DownloadStatus.DOWNLOADING] 2 下载中,[DownloadStatus.PAUSED] 3 暂停,[DownloadStatus.COMPLETED] 4 完成,[DownloadStatus.FAILED] 5 错误，[DownloadStatus.PENDING] 6 等待中 */
+    /** 下載的狀態 [DownloadStatus.NONE] 0 无状态,[DownloadStatus.WAITING] 1 開始下载,[DownloadStatus.DOWNLOADING] 2 下载中,[DownloadStatus.PAUSED] 3 暂停,[DownloadStatus.COMPLETED] 4 完成,[DownloadStatus.FAILED] 5 错误，[DownloadStatus.PENDING] 6 等待中 */
     var status: Int = DownloadStatus.NONE,
     /** 下載錯誤的信息 */
     var message: String? = "",
@@ -58,6 +58,7 @@ class DownloadTaskGroupInfo(
         progress = DownloadProgress()
         createTime = System.currentTimeMillis()
         updateTime = 0
+        current = null
         tasks.map { it.reset() }
     }
 
@@ -107,7 +108,7 @@ class DownloadTaskGroupInfo(
 
 class DGBuilder {
 
-    private var groupInfo = DownloadTaskGroupInfo()
+    private var groupInfo = DownloadGroupTaskInfo()
 
     /** id  */
     fun id(id: String): DGBuilder {
@@ -181,7 +182,7 @@ class DGBuilder {
         return this
     }
 
-    fun build() : DownloadTaskGroupInfo {
+    fun build() : DownloadGroupTaskInfo {
         if (groupInfo.tasks.isEmpty()) {
             throw IllegalArgumentException("download tasks is empty")
         }

@@ -27,6 +27,7 @@ import com.common.download.DownloadUtils
 import com.common.download.bean.DGBuilder
 import com.common.download.bean.GTBuilder
 import com.common.download.utils.DownloadLog
+import com.common.download.utils.DownloadNotificationHelper
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kingsley.download.ui.base.Dialog
@@ -74,6 +75,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         DownloadLog.init(true, "下載")
+        DownloadNotificationHelper.createNotificationChannel(channelName = "下載", channelDescription = "下載")
 //        DownloadUtils.cancel(DownloadUtils.buildUnitId(urls))
         setContent {
             DownloadTheme {
@@ -94,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                         progress = info.progress.percentStr()
                                     }
                                 if (downloadTask.downloading()) {
-                                    DownloadUtils.pause(downloadTask.groupInfo.id)
+                                    downloadTask.paused()
                                 } else {
                                     downloadTask.download()
                                 }

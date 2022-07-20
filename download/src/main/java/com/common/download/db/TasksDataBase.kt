@@ -9,17 +9,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.common.download.bean.DownloadTaskInfo
 import com.common.download.bean.DownloadStatus.DOWNLOADING
 import com.common.download.bean.DownloadStatus.PAUSED
-import com.common.download.bean.DownloadStatus.STARTED
-import com.common.download.bean.DownloadTaskGroupInfo
+import com.common.download.bean.DownloadStatus.WAITING
+import com.common.download.bean.DownloadGroupTaskInfo
 import com.common.download.db.DownloadDBUtils.DB_NAME
 
-@Database(entities = [DownloadTaskInfo::class, DownloadTaskGroupInfo::class], version = 1, exportSchema = false)
+@Database(entities = [DownloadTaskInfo::class, DownloadGroupTaskInfo::class], version = 1, exportSchema = false)
 @TypeConverters(TaskConverters::class)
 abstract class TasksDataBase : RoomDatabase() {
 
     abstract fun tasksDao(): TasksDao
-
-    abstract fun taskDao(): TaskDao
 
     companion object {
         @Volatile
@@ -48,7 +46,7 @@ abstract class TasksDataBase : RoomDatabase() {
 internal fun fixAbnormalState(db: SupportSQLiteDatabase) {
     db.beginTransaction()
     try {
-        db.execSQL("""UPDATE ${DownloadDBUtils.TASKS_TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $STARTED""")
+        db.execSQL("""UPDATE ${DownloadDBUtils.TASKS_TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $WAITING""")
         db.execSQL("""UPDATE ${DownloadDBUtils.TASKS_TABLE_NAME} SET status = $PAUSED, abnormalExit = "1" WHERE status = $DOWNLOADING""")
         db.setTransactionSuccessful()
     } finally {

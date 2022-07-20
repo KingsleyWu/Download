@@ -1,7 +1,7 @@
 package com.common.download.db
 
 import androidx.room.*
-import com.common.download.bean.DownloadTaskGroupInfo
+import com.common.download.bean.DownloadGroupTaskInfo
 
 /**
  * 下载信息的 db Dao
@@ -12,17 +12,17 @@ interface TasksDao {
      * 插入或替换
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(taskGroupInfo: DownloadTaskGroupInfo): Long
+    fun insert(taskGroupInfo: DownloadGroupTaskInfo): Long
     /**
      * 更新
      */
     @Update
-    fun update(taskGroupInfo: DownloadTaskGroupInfo): Int
+    fun update(taskGroupInfo: DownloadGroupTaskInfo): Int
     /**
      * 删除
      */
     @Delete
-    fun delete(taskGroupInfo: DownloadTaskGroupInfo): Int
+    fun delete(taskGroupInfo: DownloadGroupTaskInfo): Int
     /**
      * 删除
      */
@@ -32,22 +32,22 @@ interface TasksDao {
      * 查询所有任务
      */
     @Query("SELECT * FROM tasks_record")
-    fun getAll(): List<DownloadTaskGroupInfo>
+    fun getAll(): List<DownloadGroupTaskInfo>
     /**
      * 通过状态查询任务
      */
     @Query("SELECT * FROM tasks_record WHERE status IN(:status)")
-    fun getAllWithStatus(vararg status: Int): List<DownloadTaskGroupInfo>
+    fun getAllWithStatus(vararg status: Int): List<DownloadGroupTaskInfo>
     /**
      * 通过id查询任务
      */
     @Query("SELECT * FROM tasks_record WHERE id = :id")
-    fun get(id: String): DownloadTaskGroupInfo?
+    fun get(id: String): DownloadGroupTaskInfo?
     /**
      * 通过ids查询任务列表
      */
     @Query("SELECT * FROM tasks_record WHERE id IN(:id)")
-    fun get(vararg id: String): List<DownloadTaskGroupInfo>
+    fun get(vararg id: String): List<DownloadGroupTaskInfo>
     /**
      * 通过id更新 data
      */

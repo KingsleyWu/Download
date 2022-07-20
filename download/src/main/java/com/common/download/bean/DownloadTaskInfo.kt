@@ -1,17 +1,12 @@
 package com.common.download.bean
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.common.download.db.DownloadDBUtils
 
 /**
  * 单独的下載的信息
  */
-@Entity(
-    tableName = DownloadDBUtils.TASK_TABLE_NAME,
-    indices = [Index("url", unique = true)]
-)
+@Entity
 data class DownloadTaskInfo(
     /** 下載用的url */
     @PrimaryKey
@@ -36,7 +31,7 @@ data class DownloadTaskInfo(
     var contentLength: Long = -1,
     /** 已經下載的長度 */
     var currentLength: Long = 0,
-    /** 下載的狀態 [DownloadStatus.NONE] 0 无状态,[DownloadStatus.STARTED] 1 開始下载,[DownloadStatus.DOWNLOADING] 2 下载中,[DownloadStatus.PAUSED] 3 暂停,[DownloadStatus.COMPLETED] 4 完成,[DownloadStatus.FAILED] 5 错误，[DownloadStatus.PENDING] 6 等待中 */
+    /** 下載的狀態 [DownloadStatus.NONE] 0 无状态,[DownloadStatus.WAITING] 1 開始下载,[DownloadStatus.DOWNLOADING] 2 下载中,[DownloadStatus.PAUSED] 3 暂停,[DownloadStatus.COMPLETED] 4 完成,[DownloadStatus.FAILED] 5 错误，[DownloadStatus.PENDING] 6 等待中 */
     var status: Int = DownloadStatus.NONE,
     /** 异常信息 */
     var message: String? = "",

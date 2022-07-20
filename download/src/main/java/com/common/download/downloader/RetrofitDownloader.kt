@@ -24,7 +24,7 @@ object RetrofitDownloader : Downloader {
         if (response.isSuccessful) {
             val responseBody = response.body()
             val headers = response.headers()
-            DownloadLog.d("download: $headers")
+            DownloadLog.d("download headers: $headers")
             responseBody ?: return DownloadResponse.Error(response.code(), "ResponseBody is null")
             val supportRange = !headers["Content-Range"].isNullOrEmpty()
             return DownloadResponse.Success(responseBody.contentLength(), supportRange, responseBody.byteStream())

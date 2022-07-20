@@ -46,6 +46,7 @@ class DownloadNotificationService: Service() {
             DownloadAction.DOWNLOAD_CANCEL -> {
                 if (taskId.isNotEmpty()) {
                     DownloadUtils.cancel(taskId)
+                    NotificationManagerCompat.from(this).cancel(taskId.hashCode())
                 }
             }
             DownloadAction.DOWNLOAD_START -> {

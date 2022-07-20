@@ -1,26 +1,32 @@
 package com.common.download.base
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 
-val appContext: Application by lazy { DownloadProvider.app }
+val appContext: Context by lazy { DownloadProvider.context }
+val appApplication: Application by lazy { DownloadProvider.app }
 
+@SuppressLint("StaticFieldLeak")
 class DownloadProvider : ContentProvider() {
 
     companion object {
+        lateinit var context: Context
         lateinit var app: Application
     }
 
     override fun onCreate(): Boolean {
-        val application = context!!.applicationContext as Application
-        install(application)
+        install(context!!)
         return true
     }
 
-    private fun install(application: Application) {
+    private fun install(context: Context) {
+        DownloadProvider.context = context
+        val application = context.applicationContext as Application
         app = application
     }
 
