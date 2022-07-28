@@ -309,32 +309,27 @@ class DownloadTask(val groupInfo: DownloadGroupTaskInfo) {
      */
     internal fun pause() {
         DownloadLog.d("暫停下载， 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
-        job?.cancel()
-        groupInfo.let {
-            coroutineScope.launch(Dispatchers.IO) {
-                it.update(DownloadStatus.PAUSED, "", System.currentTimeMillis())
-                it.current?.update(DownloadStatus.PAUSED, "", System.currentTimeMillis())
-                it.updateProgress()
-                DownloadDBUtils.insertOrReplaceTasks(it)
-                withContext(Dispatchers.Main) {
-                    liveData.value = it
-                    // 创建通知
-                    DownloadUtils.notificationHelper?.createNotification(it)
-                }
-            }
-        }
+        update(DownloadStatus.PAUSED)
     }
 
     /**
      * 等待下载
      */
     internal fun pending() {
+        update(DownloadStatus.PENDING)
+    }
+
+    /**
+     * 更新状态
+     */
+    internal fun update(status: Int) {
         job?.cancel()
-        DownloadLog.d("等待下载， 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
+        DownloadLog.d("update，status = $status, 當前 Group id = ${groupInfo.id}， percent = ${groupInfo.progress.percentStr()}")
         groupInfo.let {
             coroutineScope.launch(Dispatchers.IO) {
-                it.update(DownloadStatus.PENDING, "", System.currentTimeMillis())
-                it.current?.update(DownloadStatus.PENDING, "", System.currentTimeMillis())
+                it.update(status, "", System.currentTimeMillis())
+                it.current?.update(status, "", System.currentTimeMillis())
+                it.updateProgress()
                 DownloadDBUtils.insertOrReplaceTasks(it)
                 withContext(Dispatchers.Main) {
                     liveData.value = it
@@ -457,13 +452,13 @@ class DownloadTask(val groupInfo: DownloadGroupTaskInfo) {
      */
     internal fun performNetworkAction() {
         if (groupInfo.needWifi && DownloadUtils.sWifiAvailable) {
-            if (groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status != DownloadStatus.DOWNLOADING) {
+            if (groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status == DownloadStatus.WAITING) {
                 download()
             }
-        } else if (!groupInfo.needWifi && DownloadUtils.sConnectivityAvailable && groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status != DownloadStatus.DOWNLOADING) {
+        } else if (!groupInfo.needWifi && DownloadUtils.sConnectivityAvailable && groupInfo.status != DownloadStatus.COMPLETED && groupInfo.status == DownloadStatus.WAITING) {
             download()
         } else if (groupInfo.status != DownloadStatus.COMPLETED) {
-            paused()
+            DownloadUtils.waiting(groupInfo.id)
         }
     }
 }

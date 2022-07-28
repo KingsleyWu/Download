@@ -189,6 +189,23 @@ object DownloadUtils {
             launchNext(it.groupInfo)
         }
     }
+    /**
+     * 等待下载,如等待网络链接
+     */
+    internal fun waiting(id: String) {
+        taskMap[id]?.let {
+            it.update(DownloadStatus.WAITING)
+            DownloadBroadcastUtil.sendBroadcast(DownloadAction.Waiting(it.groupInfo))
+        }
+    }
+
+    internal fun pending(id: String) {
+        taskMap[id]?.let {
+            it.pending()
+            DownloadBroadcastUtil.sendBroadcast(DownloadAction.Waiting(it.groupInfo))
+            launchNext(it.groupInfo)
+        }
+    }
 
     /**
      * 下載任务
