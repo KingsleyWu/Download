@@ -1,8 +1,7 @@
 package com.common.download.db
 
-import com.common.download.bean.DownloadGroupTaskInfo
 import com.common.download.base.appContext
-import com.common.download.bean.DownloadTaskInfo
+import com.common.download.bean.DownloadGroupTaskInfo
 
 object DownloadDBUtils {
 

@@ -15,13 +15,14 @@ import android.os.Environment
 import android.text.TextUtils
 import com.common.download.base.NotificationHelper
 import com.common.download.base.appContext
-import com.common.download.bean.*
+import com.common.download.bean.DGBuilder
+import com.common.download.bean.DownloadGroupTaskInfo
+import com.common.download.bean.DownloadStatus
+import com.common.download.bean.DownloadTaskInfo
 import com.common.download.core.DownloadTask
 import com.common.download.db.DownloadDBUtils
 import com.common.download.downloader.RetrofitDownloader
 import com.common.download.utils.*
-import com.common.download.utils.DownloadBroadcastUtil
-import com.common.download.utils.NetworkUtils
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -44,6 +45,7 @@ object DownloadUtils {
      * 下載器
      */
     var downloader = RetrofitDownloader
+
     /**
      * 通知幫助類
      */
@@ -189,6 +191,7 @@ object DownloadUtils {
             launchNext(it.groupInfo)
         }
     }
+
     /**
      * 等待下载,如等待网络链接
      */
@@ -283,12 +286,10 @@ object DownloadUtils {
         fileName: String? = null
     ): DownloadTask {
         val id = buildId(url, type)
-        return request(
-            id,
-            DGBuilder().id(id).addChild(
-                GTBuilder().groupId(id).url(url).action(action).title(title).type(childType)
-                    .flag(flag).path(path).fileName(fileName).build()
-            ))
+        return request(id, DGBuilder().id(id).addChild(
+                DownloadTaskInfo(url, id, 0, action, title, childType, flag, path, fileName)
+            )
+        )
     }
 
     /**
@@ -392,7 +393,10 @@ object DownloadUtils {
                     .addTransportType(NetworkCapabilities.TRANSPORT_BLUETOOTH)
                     .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
                     .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
-                connectivityManager?.registerNetworkCallback(builder.build(), mNetworkChangeCallback)
+                connectivityManager?.registerNetworkCallback(
+                    builder.build(),
+                    mNetworkChangeCallback
+                )
             }
         } else {
             // 注册网络变化监听
@@ -414,8 +418,8 @@ object DownloadUtils {
                 if (activeNetwork != null) {
                     sConnectivityAvailable = true
                     sWifiAvailable = cm.getNetworkCapabilities(activeNetwork)
-                            ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                            ?: false
+                        ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                        ?: false
                 } else {
                     sWifiAvailable = false
                     sConnectivityAvailable = false
@@ -437,7 +441,7 @@ object DownloadUtils {
     }
 
     private fun performNetworkAction() {
-        DownloadLog.e( "performNetworkAction sConnectivityAvailable = $sConnectivityAvailable, sWifiAvailable = $sWifiAvailable ")
+        DownloadLog.e("performNetworkAction sConnectivityAvailable = $sConnectivityAvailable, sWifiAvailable = $sWifiAvailable ")
         if (runningTaskMap.isNotEmpty()) {
             for (groupTask in runningTaskMap.values) {
                 if (groupTask.status() != DownloadStatus.COMPLETED && groupTask.status() != DownloadStatus.PAUSED) {

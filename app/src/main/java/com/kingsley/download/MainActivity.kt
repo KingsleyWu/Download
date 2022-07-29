@@ -18,14 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import coil.compose.rememberAsyncImagePainter
 import com.common.download.DownloadUtils
 import com.common.download.bean.DGBuilder
-import com.common.download.bean.GTBuilder
+import com.common.download.bean.DIBuilder
 import com.common.download.utils.DownloadLog
 import com.common.download.utils.DownloadNotificationHelper
 import com.google.gson.Gson
@@ -49,10 +49,11 @@ class MainActivity : ComponentActivity() {
     val sameUrlsGroupInfo = DGBuilder()
         .id(sameUrlsUnitId)
         .addAll {
-            sameUrls.map {
-                GTBuilder()
+            sameUrls.mapIndexed { index, url ->
+                DIBuilder()
                     .groupId(sameUrlsUnitId)
-                    .url(it)
+                    .index(index)
+                    .url(url)
                     .build()
             }
         }.build()
@@ -61,10 +62,11 @@ class MainActivity : ComponentActivity() {
     val urlsGroupInfo = DGBuilder()
         .id(urlsUnitId)
         .addAll {
-            urls.map {
-                GTBuilder()
+            urls.mapIndexed { index, url ->
+                DIBuilder()
                     .groupId(urlsUnitId)
-                    .url(it)
+                    .index(index)
+                    .url(url)
                     .build()
             }
         }.build()
@@ -73,9 +75,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
         DownloadLog.init(true, "下載")
         DownloadNotificationHelper.createNotificationChannel(channelName = "下載", channelDescription = "下載")
+        DownloadUtils.notificationHelper = CustomDownloadNotificationHelper(this)
 //        DownloadUtils.cancel(DownloadUtils.buildUnitId(urls))
         setContent {
             DownloadTheme {
@@ -87,10 +90,10 @@ class MainActivity : ComponentActivity() {
                     LazyColumn{
                         items(mockData) {
                             var progress by remember(it.url) {
-                                mutableStateOf(DownloadUtils.request(it.url).groupInfo.progress.percentStr())
+                                mutableStateOf(DownloadUtils.request(it.url, "app", "", it.name, "app", "main").groupInfo.progress.percentStr())
                             }
                             DownloadItem(it, progress){ item ->
-                                val downloadTask = DownloadUtils.request(item.url)
+                                val downloadTask = DownloadUtils.request(item.url, "app", "", item.name, "app", "main")
                                     .observer(this@MainActivity) { info ->
                                         Log.d("TAG", "mockData: $info")
                                         progress = info.progress.percentStr()
@@ -134,7 +137,7 @@ fun DownloadItem(item: DemoListItem, progress: String, click: (DemoListItem) -> 
                 contentDescription = "",
                 Modifier.size(56.dp)
             )
-            Text(text = item.name)
+            Text(text = item.name, style = TextStyle())
         }
         Text(text = progress)
     }

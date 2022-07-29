@@ -106,6 +106,9 @@ class DownloadGroupTaskInfo(
     }
 }
 
+/**
+ * DownloadGroupTaskInfo 的 Builder 類
+ */
 class DGBuilder {
 
     private var groupInfo = DownloadGroupTaskInfo()

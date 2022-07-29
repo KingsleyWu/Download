@@ -1,5 +1,6 @@
 package com.common.download.base
 
+import android.content.Context
 import com.common.download.bean.DownloadGroupTaskInfo
 import com.common.download.DownloadUtils
 import com.common.download.R
@@ -40,4 +41,7 @@ interface NotificationHelper {
     fun getCancelTitle(): CharSequence? = "Cancel"
     /** 通知下載中顯示的布標 */
     fun getStartDownloadIcon(): Int = R.drawable.ic_download
+    /** context */
+    val context: Context?
+        get() = null
 }

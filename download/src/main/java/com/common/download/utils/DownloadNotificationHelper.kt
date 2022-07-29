@@ -4,16 +4,14 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.graphics.drawable.IconCompat
-import com.common.download.*
+import com.common.download.DownloadNotificationService
+import com.common.download.DownloadUtils
+import com.common.download.KEY_TASK_ID
 import com.common.download.base.NotificationHelper
 import com.common.download.base.appContext
 import com.common.download.bean.DownloadGroupTaskInfo
@@ -66,7 +64,7 @@ open class DownloadNotificationHelper : NotificationHelper {
         } else {
             if (downloadGroupTaskInfo.showNotification) {
                 val builder = getNotificationBuilder(
-                    context = appContext,
+                    context = context ?: appContext,
                     notifyClickAction = downloadGroupTaskInfo.current?.action,
                     notifyId = notifyId,
                     contentTitle = downloadGroupTaskInfo.current?.title,

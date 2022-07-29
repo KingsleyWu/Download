@@ -7,6 +7,7 @@ object DownloadLog {
     var TAG = "Download : --> "
         private set
 
+    @JvmStatic
     fun init(debug: Boolean, tag: String) {
         DEBUG = debug
         TAG = tag

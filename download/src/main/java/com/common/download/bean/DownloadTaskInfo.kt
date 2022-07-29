@@ -65,66 +65,69 @@ data class DownloadTaskInfo(
     }
 }
 
-class GTBuilder {
+/**
+ * DownloadTaskInfo 的 Builder 類
+ */
+class DIBuilder {
 
     private var taskInfo = DownloadTaskInfo()
 
     /** 下載用的url */
-    fun url(url: String?): GTBuilder {
+    fun url(url: String?): DIBuilder {
         taskInfo.url = url ?: ""
         return this
     }
 
     /** groupId */
-    fun groupId(groupId: String): GTBuilder {
+    fun groupId(groupId: String): DIBuilder {
         taskInfo.groupId = groupId
         return this
     }
 
     /** 在 group tasks 的位置 */
-    fun index(index: Int): GTBuilder {
+    fun index(index: Int): DIBuilder {
         taskInfo.index = index
         return this
     }
 
     /** 如需要跳轉的動作可以放到此位置 */
-    fun action(action: String?): GTBuilder {
+    fun action(action: String?): DIBuilder {
         taskInfo.action = action ?: ""
         return this
     }
 
     /** 下載文件時的通知標題 */
-    fun title(title: String?): GTBuilder {
+    fun title(title: String?): DIBuilder {
         taskInfo.title = title ?: ""
         return this
     }
 
     /** 下載的文件類型，用於標識下載文件 */
-    fun type(type: String?): GTBuilder {
+    fun type(type: String?): DIBuilder {
         taskInfo.type = type ?: ""
         return this
     }
 
     /** flag */
-    fun flag(flag: String?): GTBuilder {
+    fun flag(flag: String?): DIBuilder {
         taskInfo.flag = flag ?: ""
         return this
     }
 
     /** 保存的地址 */
-    fun path(path: String?): GTBuilder {
+    fun path(path: String?): DIBuilder {
         taskInfo.path = path
         return this
     }
 
     /** 下載保存的文件名稱 */
-    fun fileName(fileName: String?): GTBuilder {
+    fun fileName(fileName: String?): DIBuilder {
         taskInfo.fileName = fileName
         return this
     }
 
     /** 跟下载相关的数据信息 */
-    fun data(data: String?): GTBuilder {
+    fun data(data: String?): DIBuilder {
         taskInfo.data = data
         return this
     }

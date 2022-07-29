@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Download</string>
+    <string name="download_pause">Pause</string>
+    <string name="download_start">Resume</string>
+    <string name="download_complete">Finished</string>
+    <string name="download_failed">Download failed</string>
+    <string name="download_task_added">Added to download list</string>
+    <string name="download_connect">Connecting</string>
+    <string name="download_waiting_wifi">Waiting for Wi-Fi connection</string>
+    <string name="cancel">Cancel</string>
+    <string name="download_cancel">Cancelling</string>
+    <string name="download_pausing">Pausing Now</string>
+    <string name="download_waiting">Waiting to download</string>
+    <string name="download_paused">Download has been paused</string>
 </resources>
